@@ -62,6 +62,23 @@
                     android:layout_gravity="center_vertical"
                     android:text="200K"/>
             </LinearLayout>
+            <!-- item_post.xml (Layout de cada item del RecyclerView) -->
+            <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <!-- Otros elementos del post (TextView, ImageView, etc.) -->
+
+                <ImageView
+                    android:id="@+id/deleteImageView"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_delete"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:contentDescription="@string/delete_icon_description"
+                    android:color="#000000"/>
+            </RelativeLayout>
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

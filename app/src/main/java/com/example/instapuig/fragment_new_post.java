@@ -192,11 +192,12 @@ public class fragment_new_post extends Fragment {
             throw new RuntimeException(e);
         }
     }
-    void guardarEnAppWrite(User<Map<String, Object>> user, String content, String
-            mediaUrl) {
+    void guardarEnAppWrite(User<Map<String, Object>> user, String content, String mediaUrl) {
         Handler mainHandler = new Handler(Looper.getMainLooper());
         // Crear instancia del servicio Databases
-        Databases databases = new Databases(client);// Datos del documento
+        Databases databases = new Databases(client);
+
+        // Datos del documento
         Map<String, Object> data = new HashMap<>();
         data.put("uid", user.getId().toString());
         data.put("author", user.getName().toString());
@@ -204,6 +205,7 @@ public class fragment_new_post extends Fragment {
         data.put("content", content);
         data.put("mediaType", mediaTipo);
         data.put("mediaUrl", mediaUrl);
+        data.put("authorId", user.getId().toString()); // Agregar el ID del autor
 
         // Crear el documento
         try {
@@ -217,13 +219,10 @@ public class fragment_new_post extends Fragment {
                         if (error != null) {
                             Snackbar.make(requireView(), "Error: " +
                                     error.toString(), Snackbar.LENGTH_LONG).show();
-                        }
-                        else
-                        {
+                        } else {
                             System.out.println("Post creado:" +
                                     result.toString());
-                            mainHandler.post(() ->
-                            {
+                            mainHandler.post(() -> {
                                 navController.popBackStack();
                             });
                         }

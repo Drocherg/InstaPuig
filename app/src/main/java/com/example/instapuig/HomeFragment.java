@@ -99,7 +99,7 @@ public class HomeFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_home, container, false);
     }
     class PostViewHolder extends RecyclerView.ViewHolder{
-        ImageView authorPhotoImageView, likeImageView, mediaImageView;
+        ImageView authorPhotoImageView, likeImageView, mediaImageView, deleteImageView;
         TextView authorTextView, contentTextView, numLikesTextView;
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -109,47 +109,67 @@ public class HomeFragment extends Fragment {
             authorTextView = itemView.findViewById(R.id.authorTextView);
             contentTextView = itemView.findViewById(R.id.contentTextView);
             numLikesTextView = itemView.findViewById(R.id.numLikesTextView);
+            deleteImageView = itemView.findViewById(R.id.deleteImageView);
         }
     }
 
     class PostsAdapter extends RecyclerView.Adapter<PostViewHolder> {
-        DocumentList<Map<String,Object>> lista = null;
+        DocumentList<Map<String, Object>> lista = null;
+
         @NonNull
         @Override
-        public PostViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int
-                viewType) {
-            return new
-                    PostViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.fragment_viewholder_post, parent, false));
+        public PostViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            return new PostViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.fragment_viewholder_post, parent, false));
         }
-        @Override
-        public void onBindViewHolder(@NonNull PostViewHolder holder, int position)
-        {
-            Map<String,Object> post =
-                    lista.getDocuments().get(position).getData();
-            if (post.get("authorPhotoUrl") == null)
-            {
-                holder.authorPhotoImageView.setImageResource(R.drawable.user);
-            }
-            else
-            {
 
+        @Override
+        public void onBindViewHolder(@NonNull PostViewHolder holder, int position) {
+            Map<String, Object> post = lista.getDocuments().get(position).getData();
+
+            // Obtener el ID del autor del post
+            String authorId = post.get("authorId") != null ? post.get("authorId").toString() : null;
+
+            // Mostrar u ocultar el ícono de papelera según si el usuario es el autor
+            if (authorId != null && userId.equals(authorId)) {
+                holder.deleteImageView.setVisibility(View.VISIBLE); // Mostrar papelera
+            } else {
+                holder.deleteImageView.setVisibility(View.GONE); // Ocultar papelera
+            }
+
+            // Configurar el evento de clic para el ícono de papelera
+            holder.deleteImageView.setOnClickListener(view -> {
+                String postId = post.get("$id").toString(); // Obtener el ID del post
+                eliminarPost(postId, authorId); // Llamar al método para eliminar el post
+            });
+
+            // Verificar y castear la lista de likes
+            List<String> likes = new ArrayList<>();
+            if (post.get("likes") instanceof List) {
+                likes = (List<String>) post.get("likes");
+            }
+
+            // Configurar otros elementos del post (author, content, likes, etc.)
+            if (post.get("authorPhotoUrl") == null) {
+                holder.authorPhotoImageView.setImageResource(R.drawable.user);
+            } else {
                 Glide.with(getContext()).load(post.get("authorPhotoUrl").toString()).circleCrop()
                         .into(holder.authorPhotoImageView);
             }
             holder.authorTextView.setText(post.get("author").toString());
             holder.contentTextView.setText(post.get("content").toString());
-            // Gestion de likes
-            List<String> likes = (List<String>) post.get("likes");
-            if(likes.contains(userId))
+
+            // Gestión de likes
+            if (likes.contains(userId))
                 holder.likeImageView.setImageResource(R.drawable.like_on);
             else
                 holder.likeImageView.setImageResource(R.drawable.like_off);
             holder.numLikesTextView.setText(String.valueOf(likes.size()));
+            List<String> finalLikes = likes;
             holder.likeImageView.setOnClickListener(view -> {
                 Databases databases = new Databases(client);
                 Handler mainHandler = new Handler(Looper.getMainLooper());
-                List<String> nuevosLikes = likes;
-                if(nuevosLikes.contains(userId))
+                List<String> nuevosLikes = new ArrayList<>(finalLikes);
+                if (nuevosLikes.contains(userId))
                     nuevosLikes.remove(userId);
                 else
                     nuevosLikes.add(userId);
@@ -167,8 +187,7 @@ public class HomeFragment extends Fragment {
                                     error.printStackTrace();
                                     return;
                                 }
-                                System.out.println("Likes actualizados:" +
-                                        result.toString());
+                                System.out.println("Likes actualizados:" + result.toString());
                                 mainHandler.post(() -> obtenerPosts());
                             })
                     );
@@ -177,16 +196,13 @@ public class HomeFragment extends Fragment {
                 }
             });
 
-                    // Miniatura de media
+            // Miniatura de media
             if (post.get("mediaUrl") != null) {
                 holder.mediaImageView.setVisibility(View.VISIBLE);
                 if ("audio".equals(post.get("mediaType").toString())) {
-
                     Glide.with(requireView()).load(R.drawable.audio).centerCrop().into(holder.mediaImageView);
                 } else {
-
-                    Glide.with(requireView()).load(post.get("mediaUrl").toString()).centerCrop().into
-                            (holder.mediaImageView);
+                    Glide.with(requireView()).load(post.get("mediaUrl").toString()).centerCrop().into(holder.mediaImageView);
                 }
                 holder.mediaImageView.setOnClickListener(view -> {
                     appViewModel.postSeleccionado.setValue(post);
@@ -195,18 +211,43 @@ public class HomeFragment extends Fragment {
             } else {
                 holder.mediaImageView.setVisibility(View.GONE);
             }
-
         }
+
         @Override
         public int getItemCount() {
             return lista == null ? 0 : lista.getDocuments().size();
         }
-        public void establecerLista(DocumentList<Map<String,Object>> lista)
-        {
+
+        void establecerLista(DocumentList<Map<String, Object>> lista) {
             this.lista = lista;
             notifyDataSetChanged();
         }
 
+        void eliminarPost(String postId, String authorId) {
+            if (!userId.equals(authorId)) {
+                Snackbar.make(requireView(), "No tienes permisos para eliminar este post", Snackbar.LENGTH_LONG).show();
+                return; // Detener la ejecución si el usuario no es el autor
+            }
+
+            Databases databases = new Databases(client);
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+
+            databases.deleteDocument(
+                    getString(R.string.APPWRITE_DATABASE_ID), // databaseId
+                    getString(R.string.APPWRITE_POSTS_COLLECTION_ID), // collectionId
+                    postId, // documentId
+                    new CoroutineCallback<>((result, error) -> {
+                        if (error != null) {
+                            Snackbar.make(requireView(), "Error al eliminar el post: " + error.toString(), Snackbar.LENGTH_LONG).show();
+                            return;
+                        }
+                        mainHandler.post(() -> {
+                            // Actualizar la lista de posts después de eliminar
+                            obtenerPosts();
+                        });
+                    })
+            );
+        }
     }
     void obtenerPosts()
     {
