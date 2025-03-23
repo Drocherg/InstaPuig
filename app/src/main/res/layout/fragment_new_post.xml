@@ -28,11 +28,18 @@
             android:id="@+id/previsualizacion"
             android:layout_width="200dp"
             android:layout_height="wrap_content" />
+        <EditText
+            android:id="@+id/hashtagsEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Ingresa hashtags (separados por espacios)"
+            android:inputType="text"/>
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical">
             <LinearLayout
+
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
@@ -54,7 +61,9 @@
                     android:layout_height="64dp"
                     android:layout_marginLeft="8dp"
                     android:background="@drawable/audio"/>
+
             </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -77,6 +86,7 @@
                     android:layout_height="64dp"
                     android:layout_marginLeft="8dp"
                     android:background="@drawable/mic" />
+
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

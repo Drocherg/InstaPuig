@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.appwrite.Client;
@@ -172,6 +173,17 @@ public class fragment_new_post extends Fragment {
             return;
         }
         publishButton.setEnabled(false);
+            EditText hashtagsEditText = requireView().findViewById(R.id.hashtagsEditText);
+            String hashtagsInput = hashtagsEditText.getText().toString();
+            List<String> hashtags = new ArrayList<>();
+            if (!hashtagsInput.isEmpty()) {
+                String[] hashtagsArray = hashtagsInput.split(" ");
+                for (String hashtag : hashtagsArray) {
+                    if (!hashtag.isEmpty()) {
+                        hashtags.add(hashtag);
+                    }
+                }
+            }
         account = new Account(client);
         try {
             account.get(new CoroutineCallback<>((result, error) -> {
@@ -180,11 +192,11 @@ public class fragment_new_post extends Fragment {
                     return;
                 }
                 if (mediaTipo == null) {
-                    guardarEnAppWrite(result, postContent, null);
+                    guardarEnAppWrite(result, postContent, null, hashtags);
                 }
                 else
                 {
-                    pujaIguardarEnAppWrite(result, postContent);
+                    pujaIguardarEnAppWrite(result, postContent, hashtags);
                 }
 
             }));
@@ -192,7 +204,7 @@ public class fragment_new_post extends Fragment {
             throw new RuntimeException(e);
         }
     }
-    void guardarEnAppWrite(User<Map<String, Object>> user, String content, String mediaUrl) {
+    void guardarEnAppWrite(User<Map<String, Object>> user, String content, String mediaUrl, List<String> hashtags) {
         Handler mainHandler = new Handler(Looper.getMainLooper());
         // Crear instancia del servicio Databases
         Databases databases = new Databases(client);
@@ -206,6 +218,7 @@ public class fragment_new_post extends Fragment {
         data.put("mediaType", mediaTipo);
         data.put("mediaUrl", mediaUrl);
         data.put("authorId", user.getId().toString()); // Agregar el ID del autor
+        data.put("hashtags", hashtags);
 
         // Crear el documento
         try {
@@ -240,7 +253,7 @@ public class fragment_new_post extends Fragment {
         return inflater.inflate(R.layout.fragment_new_post, container, false);
     }
     private void pujaIguardarEnAppWrite(User<Map<String, Object>> user, final String
-            postText)
+            postText, List<String> hashtags)
     {
         Handler mainHandler = new Handler(Looper.getMainLooper());
         Storage storage = new Storage(client);
@@ -268,7 +281,7 @@ public class fragment_new_post extends Fragment {
                                     getString(R.string.APPWRITE_PROJECT_ID) + "&mode=admin";
                     mainHandler.post(() ->
                     {
-                        guardarEnAppWrite(user, postText, downloadUrl);
+                        guardarEnAppWrite(user, postText, downloadUrl, hashtags);
                     });
                 })
         );
